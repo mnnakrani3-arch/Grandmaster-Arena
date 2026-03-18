@@ -1,0 +1,726 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Chess Game Pro{% endblock %}
+
+{% block content %}
+<div class="content-wrapper" data-user-rating="{{ user.rating or 1200 }}" data-user-games-played="{{ user.games_played or 0 }}" data-user-games-won="{{ user.games_won or 0 }}" data-user-created-at="{{ user.created_at.strftime('%B %d, %Y') if user.created_at else 'Unknown' }}">
+    <!-- Welcome Section -->
+    <section class="welcome-section" style="margin-bottom: 50px; text-align: center;">
+        <div class="glass-card animate-fade-in" style="max-width: 800px; margin: 0 auto;">
+            <div style="display: flex; align-items: center; justify-content: center; gap: 20px; flex-wrap: wrap;">
+                <div class="player-avatar" style="width: 80px; height: 80px; font-size: 2rem;">
+                    {{ user.username[0].upper() }}
+                </div>
+                <div style="text-align: left;">
+                    <h1 style="margin-bottom: 10px; font-size: 2.5rem;">Welcome back, {{ user.username }}! 👋</h1>
+                    <p style="color: var(--text-secondary); margin-bottom: 0; font-size: 1.1rem;">
+                        Ready to play some chess? Choose your game mode below.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Player Statistics -->
+    <section class="stats-section" style="margin-bottom: 50px;">
+        <div class="container">
+            <h2 style="text-align: center; margin-bottom: 40px; font-size: 2.2rem;">
+                📊 Your Chess Stats
+            </h2>
+            
+            <div class="stats-grid">
+                <div class="stat-card glass-card animate-slide-up" onclick="showStatsModal('rating')">
+                    <div class="stat-value" style="color: var(--gold-color);">{{ user.rating }}</div>
+                    <div class="stat-label">Current Rating</div>
+                    <div style="font-size: 12px; color: var(--text-secondary); margin-top: 5px;">
+                        {% if user.rating >= 1400 %}🏆 Advanced
+                        {% elif user.rating >= 1200 %}🥈 Intermediate  
+                        {% else %}🥉 Beginner
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <div class="stat-card glass-card animate-slide-up" onclick="showStatsModal('games')">
+                    <div class="stat-value">{{ user.games_played }}</div>
+                    <div class="stat-label">Games Played</div>
+                    <div style="font-size: 12px; color: var(--text-secondary); margin-top: 5px;">
+                        {% if user.games_played > 100 %}🔥 Chess Master
+                        {% elif user.games_played > 50 %}⭐ Experienced
+                        {% elif user.games_played > 10 %}📈 Getting Started
+                        {% else %}🌱 New Player
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <div class="stat-card glass-card animate-slide-up" onclick="showStatsModal('wins')">
+                    <div class="stat-value" style="color: var(--success-color);">{{ user.games_won }}</div>
+                    <div class="stat-label">Games Won</div>
+                    <div style="font-size: 12px; color: var(--text-secondary); margin-top: 5px;">
+                        {% if user.games_played > 0 %}
+                            {{ "%.1f"|format((user.games_won / user.games_played * 100)) }}% Win Rate
+                        {% else %}
+                            No games yet
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <div class="stat-card glass-card animate-slide-up" onclick="showStatsModal('streak')">
+                    <div class="stat-value" style="color: var(--accent-color);">
+                        {{ member_days }}
+                    </div>
+                    <div class="stat-label">Days as Member</div>
+                    <div style="font-size: 12px; color: var(--text-secondary); margin-top: 5px;">
+                        Since {{ user.created_at.strftime('%B %Y') }}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Quick Play Options -->
+    <section class="quick-play" style="margin-bottom: 50px;">
+        <div class="container">
+            <h2 style="text-align: center; margin-bottom: 40px; font-size: 2.2rem;">
+                🎮 Quick Play
+            </h2>
+            
+            <div class="game-modes">
+                <div class="game-mode-card" data-mode="ai" data-action="create-game">
+                    <div class="game-mode-icon">🤖</div>
+                    <h3>AI Challenge</h3>
+                    <p style="color: var(--text-secondary); margin-bottom: 20px;">
+                        Test your skills against our intelligent AI opponent with adaptive difficulty.
+                    </p>
+                    <div class="difficulty-selector" style="margin-bottom: 15px;">
+                        <span style="font-size: 12px; color: var(--text-secondary);">Difficulty: </span>
+                        <select style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); border-radius: 6px; padding: 4px 8px; color: var(--text-primary); font-size: 12px;">
+                            <option value="easy">Easy</option>
+                            <option value="medium" selected>Medium</option>
+                            <option value="hard">Hard</option>
+                        </select>
+                    </div>
+                    <div class="btn btn-primary" style="width: 100%; text-align: center; cursor: pointer;" type="button">
+                        Start AI Game
+                    </div>
+                </div>
+                
+                <div class="game-mode-card" data-mode="computer" data-action="create-game">
+                    <div class="game-mode-icon">💻</div>
+                    <h3>Computer Player</h3>
+                    <p style="color: var(--text-secondary); margin-bottom: 20px;">
+                        Quick casual games against our computer opponent. Perfect for practice!
+                    </p>
+                    <div style="margin-bottom: 15px; font-size: 12px; color: var(--text-secondary);">
+                        ✓ Instant start &nbsp; ✓ Beginner friendly &nbsp; ✓ No pressure
+                    </div>
+                    <div class="btn btn-primary" style="width: 100%; text-align: center; cursor: pointer;" type="button">
+                        Play Computer
+                    </div>
+                </div>
+                
+                <div class="game-mode-card" data-mode="friend" data-action="show-multiplayer">
+                    <div class="game-mode-icon">👥</div>
+                    <h3>Play with Friends</h3>
+                    <p style="color: var(--text-secondary); margin-bottom: 20px;">
+                        Challenge your friends in real-time multiplayer matches.
+                    </p>
+                    <div style="margin-bottom: 15px; font-size: 12px; color: var(--text-secondary);">
+                        ✓ Real-time play &nbsp; ✓ Room codes &nbsp; ✓ Chat support
+                    </div>
+                    <div class="btn btn-primary" style="width: 100%; text-align: center; cursor: pointer;" type="button">
+                        Multiplayer
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Learn Chess Section -->
+    <section class="learn-chess" style="margin-bottom: 50px;">
+        <div class="container">
+            <h2 style="text-align: center; margin-bottom: 40px; font-size: 2.2rem;">
+                📚 Learn Chess with AI
+            </h2>
+
+            <div class="learn-grid">
+                <!-- Chess Basics -->
+                <div class="learn-card glass-card animate-slide-up" onclick="showLearnModal('basics')">
+                    <div class="learn-icon">♟️</div>
+                    <h3>Chess Basics</h3>
+                    <p style="color: var(--text-secondary); margin-bottom: 15px;">
+                        Learn the fundamentals: board setup, piece values, and basic objectives.
+                    </p>
+                    <div class="learn-progress">
+                        <div class="progress-bar" style="width: 25%;"></div>
+                    </div>
+                    <small style="color: var(--text-secondary);">Beginner Level</small>
+                </div>
+
+                <!-- Piece Movements -->
+                <div class="learn-card glass-card animate-slide-up" onclick="showLearnModal('pieces')">
+                    <div class="learn-icon">♛</div>
+                    <h3>Piece Movements</h3>
+                    <p style="color: var(--text-secondary); margin-bottom: 15px;">
+                        Master how each piece moves: King, Queen, Rook, Bishop, Knight, and Pawn.
+                    </p>
+                    <div class="learn-progress">
+                        <div class="progress-bar" style="width: 40%;"></div>
+                    </div>
+                    <small style="color: var(--text-secondary);">Intermediate Level</small>
+                </div>
+
+                <!-- Special Moves -->
+                <div class="learn-card glass-card animate-slide-up" onclick="showLearnModal('special')">
+                    <div class="learn-icon">🏰</div>
+                    <h3>Special Moves</h3>
+                    <p style="color: var(--text-secondary); margin-bottom: 15px;">
+                        Discover castling, en passant, pawn promotion, and other advanced tactics.
+                    </p>
+                    <div class="learn-progress">
+                        <div class="progress-bar" style="width: 60%;"></div>
+                    </div>
+                    <small style="color: var(--text-secondary);">Advanced Level</small>
+                </div>
+
+                <!-- Check & Checkmate -->
+                <div class="learn-card glass-card animate-slide-up" onclick="showLearnModal('checkmate')">
+                    <div class="learn-icon">👑</div>
+                    <h3>Check & Checkmate</h3>
+                    <p style="color: var(--text-secondary); margin-bottom: 15px;">
+                        Learn about checks, checkmates, stalemates, and winning strategies.
+                    </p>
+                    <div class="learn-progress">
+                        <div class="progress-bar" style="width: 75%;"></div>
+                    </div>
+                    <small style="color: var(--text-secondary);">Expert Level</small>
+                </div>
+
+                <!-- Opening Principles -->
+                <div class="learn-card glass-card animate-slide-up" onclick="showLearnModal('openings')">
+                    <div class="learn-icon">🎯</div>
+                    <h3>Opening Principles</h3>
+                    <p style="color: var(--text-secondary); margin-bottom: 15px;">
+                        Control the center, develop pieces, and castle early for a strong start.
+                    </p>
+                    <div class="learn-progress">
+                        <div class="progress-bar" style="width: 50%;"></div>
+                    </div>
+                    <small style="color: var(--text-secondary);">Intermediate Level</small>
+                </div>
+
+                <!-- Endgame Techniques -->
+                <div class="learn-card glass-card animate-slide-up" onclick="showLearnModal('endgame')">
+                    <div class="learn-icon">🏁</div>
+                    <h3>Endgame Mastery</h3>
+                    <p style="color: var(--text-secondary); margin-bottom: 15px;">
+                        Essential endgame knowledge: King and pawn endings, piece coordination.
+                    </p>
+                    <div class="learn-progress">
+                        <div class="progress-bar" style="width: 85%;"></div>
+                    </div>
+                    <small style="color: var(--text-secondary);">Advanced Level</small>
+                </div>
+            </div>
+
+            <!-- AI Learning Assistant -->
+            <div class="ai-assistant glass-card animate-slide-up" style="margin-top: 40px; text-align: center; padding: 40px;">
+                <div style="font-size: 3rem; margin-bottom: 20px;">🤖</div>
+                <h3 style="margin-bottom: 15px; color: var(--accent-color);">AI Chess Tutor</h3>
+                <p style="color: var(--text-secondary); margin-bottom: 25px; max-width: 600px; margin-left: auto; margin-right: auto;">
+                    Our intelligent AI tutor adapts to your skill level and provides personalized lessons,
+                    practice positions, and instant feedback on your moves.
+                </p>
+                <div style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">
+                    <button onclick="startAILesson()" class="btn btn-primary">
+                        🎓 Start AI Lesson
+                    </button>
+                    <button onclick="practiceWithAI()" class="btn btn-secondary">
+                        🏃 Practice Mode
+                    </button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Recent Games -->
+    <section class="recent-games" style="margin-bottom: 50px;">
+        <div class="container">
+            <h2 style="text-align: center; margin-bottom: 40px; font-size: 2.2rem;">
+                📜 Recent Games
+            </h2>
+            
+            {% if recent_games %}
+            <div class="games-list" style="max-width: 800px; margin: 0 auto;">
+                {% for game in recent_games %}
+                <div class="game-item glass-card animate-slide-up" style="margin-bottom: 20px; padding: 20px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
+                        <div style="display: flex; align-items: center; gap: 15px;">
+                            <div style="font-size: 2rem;">
+                                {% if game.result == 'white_wins' and game.white_player_id == user.id %}🏆
+                                {% elif game.result == 'black_wins' and game.black_player_id == user.id %}🏆
+                                {% elif game.result == 'draw' %}🤝
+                                {% else %}😔
+                                {% endif %}
+                            </div>
+                            <div>
+                                <div style="font-weight: 600; margin-bottom: 5px;">
+                                    vs 
+                                    {% if game.game_mode == 'ai' %}🤖 AI Opponent
+                                    {% elif game.game_mode == 'computer' %}💻 Computer
+                                    {% else %}👤 Player
+                                    {% endif %}
+                                </div>
+                                <div style="font-size: 12px; color: var(--text-secondary);">
+                                    {{ game.created_at.strftime('%B %d, %Y at %I:%M %p') }}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div style="text-align: right;">
+                            <div style="font-weight: 600; margin-bottom: 5px;">
+                                {% if game.result == 'white_wins' and game.white_player_id == user.id %}Victory
+                                {% elif game.result == 'black_wins' and game.black_player_id == user.id %}Victory
+                                {% elif game.result == 'draw' %}Draw
+                                {% else %}Defeat
+                                {% endif %}
+                            </div>
+                            <div style="font-size: 12px; color: var(--text-secondary);">
+                                {{ game.status.title() }}
+                            </div>
+                        </div>
+                        
+                        {% if game.status == 'active' %}
+                        <a href="{{ url_for('play_game', game_id=game.id) }}" class="btn btn-success" style="padding: 8px 16px; font-size: 14px;">
+                            Continue Game
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="empty-state glass-card" style="text-align: center; max-width: 500px; margin: 0 auto; padding: 60px 40px;">
+                <div style="font-size: 4rem; margin-bottom: 20px; opacity: 0.5;">♟️</div>
+                <h3 style="margin-bottom: 15px;">No games yet!</h3>
+                <p style="color: var(--text-secondary); margin-bottom: 25px;">
+                    Start your chess journey by playing your first game. Choose a game mode above to begin!
+                </p>
+                <button onclick="AuthManager.createGame('computer')" class="btn btn-primary">
+                    🎮 Play First Game
+                </button>
+            </div>
+            {% endif %}
+        </div>
+    </section>
+
+    <!-- Tips and Achievements -->
+    <section class="tips-achievements" style="margin-bottom: 50px;">
+        <div class="container">
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 30px;">
+                <!-- Daily Tip -->
+                <div class="glass-card animate-slide-up">
+                    <h3 style="margin-bottom: 20px; color: var(--accent-color);">💡 Daily Chess Tip</h3>
+                    <p style="color: var(--text-secondary); line-height: 1.6; margin-bottom: 15px;">
+                        "Control the center of the board with your pawns and pieces. The four central squares (e4, e5, d4, d5) are the most important in chess!"
+                    </p>
+                    <div style="font-size: 12px; color: var(--text-secondary);">
+                        💎 Tip of the day
+                    </div>
+                </div>
+                
+                <!-- Quick Stats -->
+                <div class="glass-card animate-slide-up">
+                    <h3 style="margin-bottom: 20px; color: var(--accent-color);">🏅 Achievements</h3>
+                    <div style="display: flex; flex-direction: column; gap: 10px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <span style="font-size: 14px;">🥇 First Game</span>
+                            <span class="achievement-status {% if user.games_played > 0 %}completed{% else %}pending{% endif %}">
+                                {% if user.games_played > 0 %}✓{% else %}○{% endif %}
+                            </span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <span style="font-size: 14px;">🏆 First Win</span>
+                            <span class="achievement-status {% if user.games_won > 0 %}completed{% else %}pending{% endif %}">
+                                {% if user.games_won > 0 %}✓{% else %}○{% endif %}
+                            </span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <span style="font-size: 14px;">🔟 10 Games</span>
+                            <span class="achievement-status {% if user.games_played >= 10 %}completed{% else %}pending{% endif %}">
+                                {% if user.games_played >= 10 %}✓{% else %}{{ user.games_played }}/10{% endif %}
+                            </span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <span style="font-size: 14px;">🌟 Rating 1400+</span>
+                            <span class="achievement-status {% if user.rating >= 1400 %}completed{% else %}pending{% endif %}">
+                                {% if user.rating >= 1400 %}✓{% else %}{{ user.rating }}/1400{% endif %}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+</div>
+
+<!-- Multiplayer Modal -->
+<div id="multiplayer-modal" class="modal">
+    <div class="modal-content">
+        <h2 style="margin-bottom: 30px;">🎮 Multiplayer Options</h2>
+        
+        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; margin-bottom: 30px;">
+            <button onclick="AuthManager.createGame('friend')" class="btn btn-primary" style="padding: 20px; display: flex; flex-direction: column; align-items: center; gap: 10px;">
+                <span style="font-size: 2rem;">🎯</span>
+                <span>Create Match</span>
+                <small style="opacity: 0.8;">Get a room code</small>
+            </button>
+
+            <button onclick="showJoinGame()" class="btn btn-secondary" style="padding: 20px; display: flex; flex-direction: column; align-items: center; gap: 10px;">
+                <span style="font-size: 2rem;">🚪</span>
+                <span>Join Match</span>
+                <small style="opacity: 0.8;">Enter room code</small>
+            </button>
+
+            <button onclick="AuthManager.quickJoin()" class="btn btn-success" style="padding: 20px; display: flex; flex-direction: column; align-items: center; gap: 10px;">
+                <span style="font-size: 2rem;">⚡</span>
+                <span>Quick Join</span>
+                <small style="opacity: 0.8;">Play instantly</small>
+            </button>
+        </div>
+        
+        <div id="join-game-form" style="display: none; margin-bottom: 20px;">
+            <div class="form-group">
+                <label for="room-code-input" class="form-label">Room Code</label>
+                <input type="text" id="room-code-input" class="form-input" placeholder="Enter 6-character room code" maxlength="6" style="text-align: center; font-size: 1.2rem; letter-spacing: 2px;">
+            </div>
+            <button onclick="AuthManager.joinGame()" class="btn btn-success" style="width: 100%;">
+                Join Game
+            </button>
+        </div>
+        
+        <button onclick="closeModal('multiplayer-modal')" class="btn btn-secondary" style="width: 100%;">
+            Cancel
+        </button>
+    </div>
+</div>
+
+<!-- Stats Modal -->
+<div id="stats-modal" class="modal">
+    <div class="modal-content">
+        <h2 id="stats-modal-title" style="margin-bottom: 20px;">Statistics</h2>
+        <div id="stats-modal-content">
+            <!-- Content will be populated by JavaScript -->
+        </div>
+        <button onclick="closeModal('stats-modal')" class="btn btn-primary" style="width: 100%; margin-top: 20px;">
+            Close
+        </button>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    function showMultiplayerModal() {
+        document.getElementById('multiplayer-modal').classList.add('active');
+        document.getElementById('join-game-form').style.display = 'none';
+    }
+
+    function showJoinGame() {
+        document.getElementById('join-game-form').style.display = 'block';
+        document.getElementById('room-code-input').focus();
+    }
+
+    function closeModal(modalId) {
+        document.getElementById(modalId).classList.remove('active');
+    }
+
+    function showStatsModal(type) {
+        const modal = document.getElementById('stats-modal');
+        const title = document.getElementById('stats-modal-title');
+        const content = document.getElementById('stats-modal-content');
+
+        // Get user data from data attributes
+        const contentWrapper = document.querySelector('.content-wrapper');
+        const userData = {
+            rating: parseInt(contentWrapper.getAttribute('data-user-rating')) || 1200,
+            games_played: parseInt(contentWrapper.getAttribute('data-user-games-played')) || 0,
+            games_won: parseInt(contentWrapper.getAttribute('data-user-games-won')) || 0,
+            created_at: contentWrapper.getAttribute('data-user-created-at') || 'Unknown'
+        };
+        
+        switch(type) {
+            case 'rating':
+                title.textContent = '🏆 Your Rating';
+                content.innerHTML = `
+                    <div style="text-align: center; margin-bottom: 20px;">
+                        <div style="font-size: 3rem; color: var(--gold-color); margin-bottom: 10px;">${userData.rating}</div>
+                        <div style="color: var(--text-secondary);">Current Rating</div>
+                    </div>
+                    <div style="margin-bottom: 15px;">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                            <span>Beginner</span>
+                            <span>Master</span>
+                        </div>
+                        <div style="background: rgba(255,255,255,0.1); height: 8px; border-radius: 4px; overflow: hidden;">
+                            <div style="background: linear-gradient(90deg, var(--error-color), var(--warning-color), var(--success-color)); height: 100%; width: ${Math.min((userData.rating / 2000) * 100, 100)}%; transition: width 0.3s ease;"></div>
+                        </div>
+                    </div>
+                    <p style="color: var(--text-secondary); text-align: center;">
+                        ${userData.rating >= 1600 ? 'Excellent! You\'re an advanced player.' :
+                          userData.rating >= 1400 ? 'Great job! You\'re an intermediate player.' :
+                          userData.rating >= 1200 ? 'Good progress! Keep improving.' :
+                          'Welcome! Start playing to increase your rating.'}
+                    </p>
+                `;
+                break;
+                
+            case 'games':
+                title.textContent = '🎮 Games Played';
+                content.innerHTML = `
+                    <div style="text-align: center; margin-bottom: 20px;">
+                        <div style="font-size: 3rem; color: var(--accent-color); margin-bottom: 10px;">${userData.games_played}</div>
+                        <div style="color: var(--text-secondary);">Total Games</div>
+                    </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px;">
+                        <div style="text-align: center; padding: 15px; background: rgba(255,255,255,0.05); border-radius: 8px;">
+                            <div style="color: var(--success-color); font-weight: bold;">${userData.games_won}</div>
+                            <div style="font-size: 12px; color: var(--text-secondary);">Won</div>
+                        </div>
+                        <div style="text-align: center; padding: 15px; background: rgba(255,255,255,0.05); border-radius: 8px;">
+                            <div style="color: var(--error-color); font-weight: bold;">${userData.games_played - userData.games_won}</div>
+                            <div style="font-size: 12px; color: var(--text-secondary);">Lost/Draw</div>
+                        </div>
+                    </div>
+                    <p style="color: var(--text-secondary); text-align: center;">
+                        Win rate: ${userData.games_played > 0 ? ((userData.games_won / userData.games_played) * 100).toFixed(1) : 0}%
+                    </p>
+                `;
+                break;
+                
+            case 'wins':
+                title.textContent = '🏆 Victories';
+                content.innerHTML = `
+                    <div style="text-align: center; margin-bottom: 20px;">
+                        <div style="font-size: 3rem; color: var(--success-color); margin-bottom: 10px;">${userData.games_won}</div>
+                        <div style="color: var(--text-secondary);">Games Won</div>
+                    </div>
+                    <div style="text-align: center; margin-bottom: 20px;">
+                        <div style="font-size: 1.5rem; margin-bottom: 10px;">
+                            ${userData.games_played > 0 ? ((userData.games_won / userData.games_played) * 100).toFixed(1) : 0}%
+                        </div>
+                        <div style="color: var(--text-secondary);">Win Rate</div>
+                    </div>
+                    <p style="color: var(--text-secondary); text-align: center;">
+                        ${userData.games_won === 0 ? 'Play your first game to start winning!' :
+                          userData.games_won === 1 ? 'Congratulations on your first victory!' :
+                          `Great job! You've won ${userData.games_won} games.`}
+                    </p>
+                `;
+                break;
+                
+            case 'streak':
+                title.textContent = '📅 Membership';
+                content.innerHTML = `
+                    <div style="text-align: center; margin-bottom: 20px;">
+                        <div style="font-size: 3rem; color: var(--accent-color); margin-bottom: 10px;">⭐</div>
+                        <div style="color: var(--text-secondary);">Member since ${userData.created_at}</div>
+                    </div>
+                    <p style="color: var(--text-secondary); text-align: center;">
+                        Thank you for being part of the Chess Game Pro community!
+                    </p>
+                `;
+                break;
+        }
+        
+        modal.classList.add('active');
+    }
+
+    // Close modals when clicking outside
+    document.addEventListener('click', function(e) {
+        if (e.target.classList.contains('modal')) {
+            e.target.classList.remove('active');
+        }
+    });
+
+    // AI Learning functions
+    function startAILesson() {
+        window.location.href = '/ai-lesson';
+    }
+
+    function practiceWithAI() {
+        window.location.href = '/ai-practice';
+    }
+
+    // Room code input formatting
+    document.addEventListener('DOMContentLoaded', function() {
+        const roomCodeInput = document.getElementById('room-code-input');
+        if (roomCodeInput) {
+            roomCodeInput.addEventListener('input', function(e) {
+                e.target.value = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+                if (e.target.value.length === 6) {
+                    // Auto-submit when 6 characters are entered
+                    setTimeout(() => AuthManager.joinGame(), 500);
+                }
+            });
+        }
+
+        // Add animation delays to elements
+        document.querySelectorAll('.animate-slide-up').forEach((el, index) => {
+            el.style.animationDelay = `${index * 0.1}s`;
+        });
+
+        // Add hover effects to game mode cards
+        document.querySelectorAll('.game-mode-card').forEach(card => {
+            card.addEventListener('mouseenter', function() {
+                this.style.transform = 'translateY(-10px) scale(1.02)';
+                this.style.borderColor = 'var(--accent-color)';
+            });
+
+            card.addEventListener('mouseleave', function() {
+                this.style.transform = 'translateY(0) scale(1)';
+                this.style.borderColor = 'rgba(255, 255, 255, 0.2)';
+            });
+            
+            // Add click handlers
+            card.addEventListener('click', function() {
+                const action = this.dataset.action;
+                const mode = this.dataset.mode;
+                
+                if (action === 'create-game') {
+                    AuthManager.createGame(mode);
+                } else if (action === 'show-multiplayer') {
+                    showMultiplayerModal();
+                }
+            });
+        });
+
+        // Add click effects to stat cards
+        document.querySelectorAll('.stat-card').forEach(card => {
+            card.style.cursor = 'pointer';
+            card.addEventListener('mouseenter', function() {
+                this.style.transform = 'translateY(-5px)';
+                this.style.borderColor = 'var(--accent-color)';
+            });
+
+            card.addEventListener('mouseleave', function() {
+                this.style.transform = 'translateY(0)';
+                this.style.borderColor = 'rgba(255, 255, 255, 0.2)';
+            });
+        });
+    });
+</script>
+
+<style>
+    /* Additional dashboard-specific styles */
+    .game-mode-card {
+        cursor: pointer;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    
+    .stat-card {
+        cursor: pointer;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    
+    .game-item {
+        transition: all 0.3s ease;
+    }
+    
+    .game-item:hover {
+        transform: translateY(-3px);
+        border-color: rgba(255, 255, 255, 0.3);
+    }
+    
+    /* Responsive adjustments for dashboard */
+    @media (max-width: 768px) {
+        .welcome-section .glass-card > div {
+            flex-direction: column;
+            text-align: center;
+        }
+        
+        .game-modes {
+            grid-template-columns: 1fr;
+        }
+        
+        .stats-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+    }
+    
+    @media (max-width: 480px) {
+        .stats-grid {
+            grid-template-columns: 1fr;
+        }
+        
+        h1 {
+            font-size: 2rem !important;
+        }
+        
+        h2 {
+            font-size: 1.8rem !important;
+        }
+    }
+    
+    /* Base modal styles */
+    .modal {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.6);
+        display: none;
+        align-items: center;
+        justify-content: center;
+        z-index: 1000;
+        backdrop-filter: blur(4px);
+    }
+
+    .modal.active {
+        display: flex;
+    }
+
+    .modal-content {
+        background: var(--bg-primary);
+        border-radius: 16px;
+        padding: 30px;
+        max-width: 600px;
+        width: 90%;
+        max-height: 80vh;
+        overflow-y: auto;
+        position: relative;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+    }
+
+    /* Modal animations */
+    .modal.active .modal-content {
+        animation: modalSlideIn 0.3s ease-out;
+    }
+
+    @keyframes modalSlideIn {
+        from {
+            opacity: 0;
+            transform: translateY(-50px) scale(0.9);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+        }
+    }
+
+    /* Achievement status styles */
+    .achievement-status {
+        font-size: 12px;
+        font-weight: bold;
+    }
+
+    .achievement-status.completed {
+        color: var(--success-color);
+    }
+
+    .achievement-status.pending {
+        color: var(--text-secondary);
+    }
+</style>
+{% endblock %} 

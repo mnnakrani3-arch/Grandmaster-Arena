@@ -1,0 +1,411 @@
+{% extends "base.html" %}
+
+{% block title %}AI Chess Tutor - Practice{% endblock %}
+
+{% block head %}
+<meta name="fen" content="{{ position.fen }}">
+{% endblock %}
+
+{% block content %}
+<div class="content-wrapper">
+    <!-- Header -->
+    <section class="practice-header" style="margin-bottom: 40px; text-align: center;">
+        <div class="glass-card animate-fade-in" style="max-width: 800px; margin: 0 auto;">
+            <div style="display: flex; align-items: center; justify-content: center; gap: 20px; flex-wrap: wrap;">
+                <div class="practice-icon" style="font-size: 3rem;">🎯</div>
+                <div style="text-align: left;">
+                    <h1 style="margin-bottom: 10px; font-size: 2.5rem;">Practice Mode</h1>
+                    <p style="color: var(--text-secondary); margin-bottom: 0; font-size: 1.1rem;">
+                        Test your chess knowledge with interactive puzzles and challenges
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Practice Content -->
+    <section class="practice-content" style="margin-bottom: 40px;">
+        <div class="container">
+            <div class="practice-grid" style="display: grid; grid-template-columns: 1fr 400px; gap: 40px; align-items: start;">
+                <!-- Main Content -->
+                <div class="practice-main">
+                    <div class="glass-card animate-slide-up">
+                        <div class="puzzle-header" style="margin-bottom: 30px;">
+                            <h2 style="font-size: 2rem; margin-bottom: 10px;">{{ position.title }}</h2>
+                            <div class="puzzle-meta" style="display: flex; align-items: center; gap: 15px; margin-bottom: 15px;">
+                                <span style="color: var(--text-secondary);">Puzzle {{ position_id + 1 }}</span>
+                                <div class="difficulty-badge" style="background: var(--accent-color); color: white; padding: 4px 12px; border-radius: 20px; font-size: 12px;">
+                                    {% if position_id == 0 %}Beginner{% elif position_id == 1 %}Intermediate{% else %}Advanced{% endif %}
+                                </div>
+                            </div>
+                            <p style="font-size: 1.1rem; line-height: 1.6; color: var(--text-primary);">
+                                {{ position.description }}
+                            </p>
+                        </div>
+
+                        <!-- Move Input -->
+                        <div class="move-input-section" style="margin-bottom: 30px;">
+                            <h3 style="margin-bottom: 15px;">Your Move</h3>
+                            <div style="display: flex; gap: 15px; align-items: center; flex-wrap: wrap;">
+                                <input type="text" id="move-input" class="form-input" placeholder="Enter your move (e.g., e4, Nf3, Qh5#)" style="flex: 1; min-width: 200px;">
+                                <button onclick="submitMove()" class="btn btn-primary" id="submit-btn">
+                                    Submit Move
+                                </button>
+                                <button onclick="showHint()" class="btn btn-secondary" id="hint-btn">
+                                    💡 Hint
+                                </button>
+                            </div>
+                            <div id="feedback" style="margin-top: 15px; min-height: 24px;"></div>
+                        </div>
+
+                        <!-- Navigation -->
+                        <div class="practice-navigation" style="display: flex; justify-content: space-between; align-items: center;">
+                            {% if prev_position is not none %}
+                                <a href="{{ url_for('ai_practice', position=prev_position) }}" class="btn btn-secondary">
+                                    ← Previous Puzzle
+                                </a>
+                            {% else %}
+                                <div></div>
+                            {% endif %}
+
+                            {% if next_position is not none %}
+                                <a href="{{ url_for('ai_practice', position=next_position) }}" class="btn btn-primary" id="next-btn" style="display: none;">
+                                    Next Puzzle →
+                                </a>
+                            {% else %}
+                                <a href="{{ url_for('ai_lesson') }}" class="btn btn-success" id="finish-btn" style="display: none;">
+                                    🎓 Back to Lessons
+                                </a>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Chess Board -->
+                <div class="practice-board">
+                    <div class="glass-card animate-slide-up">
+                        <h3 style="margin-bottom: 20px; text-align: center;">Practice Position</h3>
+                        <div class="practice-board-container" style="width: 100%; height: 400px; position: relative; border-radius: var(--border-radius); overflow: hidden; box-shadow: var(--box-shadow);">
+                            <div id="practice-chess-board" data-fen="{{ position.fen }}" style="width: 100%; height: 100%; display: grid; grid-template-columns: repeat(8, 1fr); grid-template-rows: repeat(8, 1fr);">
+                                <!-- Board will be generated by JavaScript -->
+                            </div>
+                        </div>
+                        <div style="margin-top: 15px; text-align: center;">
+                            <small style="color: var(--text-secondary);">Click pieces to see possible moves</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Practice Stats -->
+    <section class="practice-stats" style="margin-bottom: 40px;">
+        <div class="container">
+            <div class="glass-card animate-slide-up">
+                <h3 style="margin-bottom: 20px; text-align: center;">Your Progress</h3>
+                <div class="stats-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 20px;">
+                    <div class="stat-item" style="text-align: center;">
+                        <div class="stat-value" id="correct-count">0</div>
+                        <div class="stat-label">Correct</div>
+                    </div>
+                    <div class="stat-item" style="text-align: center;">
+                        <div class="stat-value" id="attempts-count">0</div>
+                        <div class="stat-label">Attempts</div>
+                    </div>
+                    <div class="stat-item" style="text-align: center;">
+                        <div class="stat-value" id="accuracy">0%</div>
+                        <div class="stat-label">Accuracy</div>
+                    </div>
+                    <div class="stat-item" style="text-align: center;">
+                        <div class="stat-value" id="streak">0</div>
+                        <div class="stat-label">Streak</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Quick Actions -->
+    <section class="quick-actions" style="text-align: center;">
+        <div class="action-buttons" style="display: flex; gap: 20px; justify-content: center; flex-wrap: wrap;">
+            <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">
+                ← Back to Dashboard
+            </a>
+            <a href="{{ url_for('ai_lesson') }}" class="btn btn-primary">
+                📚 Lessons
+            </a>
+            <a href="{{ url_for('create_game', mode='ai') }}" class="btn btn-success">
+                🤖 Play AI Game
+            </a>
+        </div>
+    </section>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    let currentPosition = parseInt("{{ position_id }}");
+    let attempts = 0;
+    let correct = 0;
+    let streak = 0;
+    let hintShown = false;
+
+    // Create practice chess board
+    document.addEventListener('DOMContentLoaded', function() {
+        const practiceBoard = document.getElementById('practice-chess-board');
+        if (practiceBoard) {
+            // Get FEN from data attribute
+            const fen = practiceBoard.getAttribute('data-fen');
+            createBoardFromFEN(practiceBoard, fen);
+        }
+
+        // Load stats from localStorage
+        loadStats();
+
+        // Focus on move input
+        document.getElementById('move-input').focus();
+
+        // Hide loading overlay after board is created
+        if (typeof hideLoading === 'function') {
+            hideLoading();
+        }
+    });
+
+    function createBoardFromFEN(boardElement, fen) {
+        // Clear existing board
+        boardElement.innerHTML = '';
+
+        // Parse FEN and create board
+        const pieces = {
+            'r': '♜', 'n': '♞', 'b': '♝', 'q': '♛', 'k': '♚', 'p': '♟',
+            'R': '♖', 'N': '♘', 'B': '♗', 'Q': '♕', 'K': '♔', 'P': '♙'
+        };
+
+        const fenParts = fen.split(' ');
+        const board = fenParts[0].split('/');
+
+        for (let row = 0; row < 8; row++) {
+            const rowData = board[row];
+            let col = 0;
+
+            for (let i = 0; i < rowData.length; i++) {
+                const char = rowData[i];
+
+                if (isNaN(char)) {
+                    // Piece
+                    const square = document.createElement('div');
+                    // Fix: invert row to display board correctly (row 0 is top, but FEN row 0 is 8th rank)
+                    const displayRow = 7 - row;
+                    square.className = `chess-square ${(displayRow + col) % 2 === 0 ? 'light' : 'dark'}`;
+                    square.textContent = pieces[char] || '';
+                    square.style.display = 'flex';
+                    square.style.alignItems = 'center';
+                    square.style.justifyContent = 'center';
+                    square.style.fontSize = '2rem';
+                    square.style.cursor = 'pointer';
+                    square.dataset.row = displayRow;
+                    square.dataset.col = col;
+
+                    // Add click handler for piece selection
+                    square.addEventListener('click', function() {
+                        if (this.textContent.trim()) {
+                            highlightSquare(this);
+                        }
+                    });
+
+                    boardElement.appendChild(square);
+                    col++;
+                } else {
+                    // Empty squares
+                    for (let j = 0; j < parseInt(char); j++) {
+                        const square = document.createElement('div');
+                        const displayRow = 7 - row;
+                        square.className = `chess-square ${(displayRow + col) % 2 === 0 ? 'light' : 'dark'}`;
+                        square.style.display = 'flex';
+                        square.style.alignItems = 'center';
+                        square.style.justifyContent = 'center';
+                        square.dataset.row = displayRow;
+                        square.dataset.col = col;
+                        boardElement.appendChild(square);
+                        col++;
+                    }
+                }
+            }
+        }
+    }
+
+    function highlightSquare(square) {
+        // Remove previous highlights
+        document.querySelectorAll('.chess-square').forEach(sq => {
+            sq.classList.remove('selected');
+        });
+
+        // Highlight selected square
+        square.classList.add('selected');
+
+        // You could add logic here to show possible moves
+        // For now, just visual feedback
+    }
+
+    async function submitMove() {
+        const moveInput = document.getElementById('move-input');
+        const move = moveInput.value.trim().toLowerCase();
+        const feedback = document.getElementById('feedback');
+
+        if (!move) {
+            showFeedback('Please enter a move', 'warning');
+            return;
+        }
+
+        attempts++;
+
+        try {
+            const response = await fetch('/api/check-solution', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    position_id: currentPosition,
+                    move: move
+                })
+            });
+
+            const result = await response.json();
+
+            if (result.correct) {
+                correct++;
+                streak++;
+                showFeedback('🎉 Correct! Well done!', 'success');
+                document.getElementById('next-btn').style.display = 'inline-block';
+                document.getElementById('submit-btn').disabled = true;
+                moveInput.disabled = true;
+            } else {
+                streak = 0;
+                showFeedback(`❌ Incorrect. The correct move was: ${result.solution}`, 'error');
+                hintShown = false;
+            }
+
+            updateStats();
+            saveStats();
+
+        } catch (error) {
+            showFeedback('Error checking move. Please try again.', 'error');
+        }
+    }
+
+    function showHint() {
+        const hint = "{{ position.hint }}";
+        showFeedback(`💡 Hint: ${hint}`, 'info');
+        hintShown = true;
+        document.getElementById('hint-btn').disabled = true;
+    }
+
+    function showFeedback(message, type) {
+        const feedback = document.getElementById('feedback');
+        feedback.textContent = message;
+        feedback.className = `feedback ${type}`;
+        feedback.style.display = 'block';
+    }
+
+    function updateStats() {
+        document.getElementById('correct-count').textContent = correct;
+        document.getElementById('attempts-count').textContent = attempts;
+        document.getElementById('accuracy').textContent = attempts > 0 ? Math.round((correct / attempts) * 100) + '%' : '0%';
+        document.getElementById('streak').textContent = streak;
+    }
+
+    function loadStats() {
+        const stats = localStorage.getItem('chess-practice-stats');
+        if (stats) {
+            const data = JSON.parse(stats);
+            correct = data.correct || 0;
+            attempts = data.attempts || 0;
+            streak = data.streak || 0;
+            updateStats();
+        }
+    }
+
+    function saveStats() {
+        const stats = {
+            correct: correct,
+            attempts: attempts,
+            streak: streak,
+            lastUpdated: new Date().toISOString()
+        };
+        localStorage.setItem('chess-practice-stats', JSON.stringify(stats));
+    }
+
+    // Handle Enter key in move input
+    document.getElementById('move-input').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            submitMove();
+        }
+    });
+</script>
+
+<style>
+    .feedback {
+        padding: 10px 15px;
+        border-radius: 8px;
+        margin-top: 10px;
+        font-weight: 500;
+    }
+
+    .feedback.success {
+        background: rgba(16, 172, 132, 0.2);
+        color: var(--success-color);
+        border: 1px solid var(--success-color);
+    }
+
+    .feedback.error {
+        background: rgba(255, 107, 107, 0.2);
+        color: var(--error-color);
+        border: 1px solid var(--error-color);
+    }
+
+    .feedback.warning {
+        background: rgba(255, 159, 67, 0.2);
+        color: var(--warning-color);
+        border: 1px solid var(--warning-color);
+    }
+
+    .feedback.info {
+        background: rgba(0, 123, 255, 0.2);
+        color: var(--info-color, #007bff);
+        border: 1px solid var(--info-color, #007bff);
+    }
+
+    .chess-square.selected {
+        background: var(--accent-color) !important;
+        color: white;
+    }
+
+    .practice-board-container .chess-square {
+        transition: all 0.2s ease;
+    }
+
+    .practice-board-container .chess-square:hover {
+        background: rgba(255, 255, 255, 0.2) !important;
+    }
+
+    #practice-chess-board .chess-square {
+        width: 100%;
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+        border: 1px solid rgba(0, 0, 0, 0.1);
+    }
+
+    #practice-chess-board .chess-square.light {
+        background: #f0d9b5;
+    }
+
+    #practice-chess-board .chess-square.dark {
+        background: #b58863;
+    }
+</style>
+{% endblock %}

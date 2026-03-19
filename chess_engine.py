@@ -205,7 +205,9 @@ class ChessGame:
     
     def is_square_attacked(self, row: int, col: int, by_color: str) -> bool:
         """Check if a square is attacked by pieces of given color"""
+        import copy
         opponent_color = 'black' if by_color == 'white' else 'white'
+        current_backup = self.current_player
         
         for r in range(8):
             for c in range(8):
@@ -215,14 +217,15 @@ class ChessGame:
                         # Pawn attacks diagonally
                         direction = 1 if piece.color == 'black' else -1
                         if (r + direction == row and abs(c - col) == 1):
+                            self.current_player = current_backup
                             return True
                     elif piece.piece_type == 'king':
                         # King attacks adjacent squares
                         if abs(r - row) <= 1 and abs(c - col) <= 1 and not (r == row and c == col):
+                            self.current_player = current_backup
                             return True
                     else:
                         # Other pieces
-                        temp_current = self.current_player
                         self.current_player = opponent_color
                         if piece.piece_type == 'knight':
                             moves = self.get_knight_moves(r, c)
@@ -234,11 +237,12 @@ class ChessGame:
                             moves = self.get_queen_moves(r, c)
                         else:
                             moves = []
-                        self.current_player = temp_current
+                        self.current_player = current_backup
                         
                         if (row, col) in moves:
                             return True
         
+        self.current_player = current_backup
         return False
     
     def is_in_check(self, color: str) -> bool:
@@ -248,24 +252,25 @@ class ChessGame:
     
     def is_move_legal(self, from_row: int, from_col: int, to_row: int, to_col: int) -> bool:
         """Check if move is legal (doesn't put own king in check)"""
+        import copy
 
         piece = self.get_piece_at(from_row, from_col)
         target = self.get_piece_at(to_row, to_col)
+        
+        board_backup = copy.deepcopy(self.board)
+        king_pos_backup = self.king_positions.copy()
         
         self.board[to_row][to_col] = piece
         self.board[from_row][from_col] = None
 
         if piece.piece_type == 'king':
-            old_king_pos = self.king_positions[piece.color]
+            old_king_pos = king_pos_backup[piece.color]
             self.king_positions[piece.color] = (to_row, to_col)
 
         legal = not self.is_in_check(piece.color)
 
-        self.board[from_row][from_col] = piece
-        self.board[to_row][to_col] = target
-
-        if piece.piece_type == 'king':
-            self.king_positions[piece.color] = old_king_pos
+        self.board = board_backup
+        self.king_positions = king_pos_backup
         
         return legal
     

@@ -1,28 +1,11 @@
-# AI Chess Tutor Implementation Plan
+# Chess Pieces Movement & Path Highlight Fix
+Current Working Directory: e:/Grandmaster-Arena-main/Grandmaster-Arena-main
 
-## Backend Implementation
-- [ ] Add /ai-lesson route in app.py
-- [ ] Add /ai-practice route in app.py
-- [ ] Create lesson content data structure
-- [ ] Add practice position storage
+## Plan Steps:
+- [x] **Step 1**: Create this TODO.md file ✓
+- [x] **Step 2**: Fix chess_engine.py - Add deepcopy for board simulation in is_move_legal/is_square_attacked to prevent mutation ✓
+- [ ] **Step 3**: Test by restarting Flask server (`python app.py`) and playing game
+- [ ] **Step 4**: Verify in browser: select piece → green path dots highlight → move works
+- [ ] **Step 5**: Check SocketIO updates board correctly
 
-## Frontend Implementation
-- [ ] Implement startAILesson() function in chess.js
-- [ ] Implement practiceWithAI() function in chess.js
-- [ ] Add lesson navigation logic
-- [ ] Add practice mode logic
-
-## Templates
-- [ ] Create templates/lesson.html
-- [ ] Create templates/practice.html
-
-## Content Creation
-- [ ] Define chess lessons (basics, openings, tactics)
-- [ ] Create practice positions with hints
-- [ ] Add lesson progression system
-
-## Testing & Polish
-- [ ] Test lesson navigation
-- [ ] Test practice functionality
-- [ ] Add progress tracking
-- [ ] Implement hints system
+**Next Action**: Restart server and test
